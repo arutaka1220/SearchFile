@@ -1,0 +1,13 @@
+{
+  "name": "searchfile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "arutaka1220",
+  "license": "MIT",
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7",
+    "readline": "^1.3.0"
+  }
+}
