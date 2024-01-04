@@ -21,8 +21,89 @@ const SEARCH_FOLDER_PATH = path.resolve(SEARCH_FOLDER_PATH_RAW);
 
 console.log("検索中...");
 
-/** @type { {name: string, path: string} } */
+/** @type { {name: string, path: string}[] } */
 const foundedFiles = [];
+
+/**
+ * Recursively reads a directory and performs a callback function on each file.
+ * @param {string} dirPath - The path of the directory to read.
+ * @param {function(string, fs.Stats): void} callback - The callback function to be executed on each file.
+ * @param {any} onEnd - The function to be executed when the directory reading is complete.
+ * @returns {Promise<void>}
+ */
+async function readDirRecursive(dirPath, callback, onEnd) {
+    if (fs.existsSync(dirPath) === false) {
+        console.log(`${dirPath} は存在しません。`);
+        process.exit(1);
+    }
+
+    const files = fs.readdirSync(dirPath);
+
+    for await (const file of files) {
+        const filePath = path.join(dirPath, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isDirectory()) {
+            await readDirRecursive(filePath, callback, null);
+        } else {
+            callback(filePath, stat);
+        }
+    }
+
+    if (onEnd !== null) onEnd();
+}
+
+/**
+ * Checks if a file name includes the search text.
+ * @param {string} fileName - The name of the file to check.
+ * @returns {boolean} - Returns true if the file name includes the search text, otherwise false.
+ */
+function check(fileName) {
+    return fileName.includes(SEARCH_TEXT);
+}
+
+/**
+ * Opens a file based on its extension.
+ * @param {string} filePath - The path of the file to open.
+ * @returns {void}
+ */
+function openFile(filePath) {
+    const fileName = path.basename(filePath);
+    const ext = fileName.split(".")[1];
+
+    if (!SUPPORTED_FILE_EXTENSIONS.includes(ext)) {
+        console.log("未対応のファイルです。");
+        process.exit(1);
+    }
+
+    switch (ext) {
+        case "png":
+            child.execSync(`start ${fileName}`, { "cwd": filePath.replace(fileName, "") });
+            return;
+
+        case "json":
+            child.execSync(`notepad ${fileName}`, { "cwd": filePath.replace(fileName, "") });
+            return;
+
+        default:
+            console.log("未対応のファイルです");
+            return;
+    }
+}
+
+/**
+ * Asks a question and waits for user input.
+ * @param {string} question - The question to ask the user.
+ * @returns {Promise<string>} - The user's input as a string.
+ */
+async function question(question) {
+    const rl = readline.createInterface({
+        "input": process.stdin,
+        "output": process.stdout
+    });
+
+    return await rl.question(question);
+}
 
 readDirRecursive(SEARCH_FOLDER_PATH, (filePath, stat) => {
     const fileName = path.basename(filePath);
@@ -71,73 +152,3 @@ readDirRecursive(SEARCH_FOLDER_PATH, (filePath, stat) => {
         process.exit(0);
     }
 });
-
-function openFile(filePath) {
-    const fileName = path.basename(filePath);
-    const ext = fileName.split(".")[1];
-
-    if (!SUPPORTED_FILE_EXTENSIONS.includes(ext)) {
-        console.log("未対応のファイルです。");
-        process.exit(1);
-    }
-
-    switch (ext) {
-        case "png":
-            child.execSync(`start ${fileName}`, { "cwd": filePath.replace(fileName, "") });
-            return;
-
-        case "json":
-            child.execSync(`notepad ${fileName}`, { "cwd": filePath.replace(fileName, "") });
-            return;
-
-        default:
-            console.log("未対応のファイルです");
-            return;
-    }
-}
-
-async function question(question) {
-    const rl = readline.createInterface({
-        "input": process.stdin,
-        "output": process.stdout
-    });
-
-    return await rl.question(question);
-}
-
-/**
- * 
- * @param { string } fileName
- * @returns { boolean } 
- */
-function check(fileName) {
-    return fileName.includes(SEARCH_TEXT);
-}
-
-/**
- * 
- * @param { string } dirPath 
- * @param { ({filePath: string, stat: fs.Stats}) => any } callback 
- * @param { any } onEnd
- */
-async function readDirRecursive(dirPath, callback, onEnd) {
-    if (fs.existsSync(dirPath) === false) {
-        console.log(`${dirPath} は存在しません。`);
-        process.exit(1);
-    }
-
-    const files = fs.readdirSync(dirPath);
-
-    for await (const file of files) {
-        const filePath = path.join(dirPath, file);
-        const stat = fs.statSync(filePath);
-
-        if (stat.isDirectory()) {
-            await readDirRecursive(filePath, callback, null);
-        } else {
-            callback(filePath, stat);
-        }
-    }
-
-    if (onEnd !== null) onEnd();
-}
