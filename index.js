@@ -122,6 +122,7 @@ readDirRecursive(SEARCH_FOLDER_PATH, (filePath, stat) => {
 
         console.log(`1個のファイルが見つかりました。`);
         console.log(`一つのため、自動で開きます。`);
+        console.log(`ファイルパス: ${path.dirname(file.path.split("¥").slice(-1).join(""))}/${file.name}`);
 
         openFile(file.path);
 
